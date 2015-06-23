@@ -30,9 +30,39 @@ TFT_ILI9163C::TFT_ILI9163C(uint8_t CS, uint8_t DC) : Adafruit_GFX(_TFTWIDTH, _TF
 //Arduino Uno, Leonardo, Mega, Teensy 2.0, etc
 #ifdef __AVR__
 
+#define PIN_CLK  6
+#define PIN_DATA 7
+
 inline void TFT_ILI9163C::spiwrite(uint8_t c){
+#if 0
     SPDR = c;
     while(!(SPSR & _BV(SPIF)));
+#else
+    int cnt;
+    uint8_t port_clk_lo_data_lo;
+    uint8_t port_clk_lo_data_hi;
+    uint8_t port_clk_hi_data_lo;
+    uint8_t port_clk_hi_data_hi;
+
+    port_clk_lo_data_lo = *dataport & ~clkpinmask & ~datapinmask;
+    port_clk_hi_data_lo = port_clk_lo_data_lo | clkpinmask;
+    port_clk_lo_data_hi = port_clk_lo_data_lo | datapinmask;
+    port_clk_hi_data_hi = port_clk_lo_data_hi | clkpinmask;
+    
+    for (cnt = 8; cnt; cnt--) {
+	    // digitalWrite(PIN_CLK, LOW);
+	    
+	    // digitalWrite(PIN_DATA, c & 128 ? HIGH : LOW);
+	    if (c & 128) {
+		    *dataport = port_clk_lo_data_hi;
+		    *dataport = port_clk_hi_data_hi;
+	    } else {
+		    *dataport = port_clk_lo_data_lo;
+		    *dataport = port_clk_hi_data_lo;
+	    }
+	    c = c << 1;
+    }
+#endif
 }
 
 void TFT_ILI9163C::writecommand(uint8_t c){
@@ -178,10 +208,21 @@ void TFT_ILI9163C::begin(void) {
 #ifdef __AVR__
 	pinMode(_rs, OUTPUT);
 	pinMode(_cs, OUTPUT);
+	pinMode(PIN_DATA, OUTPUT);
+	pinMode(PIN_CLK, OUTPUT);
+	dataport  = portOutputRegister(digitalPinToPort(PIN_DATA));
+	clkport   = portOutputRegister(digitalPinToPort(PIN_CLK));
 	csport    = portOutputRegister(digitalPinToPort(_cs));
 	rsport    = portOutputRegister(digitalPinToPort(_rs));
+	datapinmask = digitalPinToBitMask(PIN_DATA);
+	clkpinmask = digitalPinToBitMask(PIN_CLK);
 	cspinmask = digitalPinToBitMask(_cs);
 	rspinmask = digitalPinToBitMask(_rs);
+	if (clkport != dataport) {
+		// datapin and clkpin have to be on the same port!
+		Serial.println("spiwrite pin error");
+	}
+
     SPI.begin();
 	#if !defined (SPI_HAS_TRANSACTION)
     SPI.setClockDivider(SPI_CLOCK_DIV2); // 8 MHz
