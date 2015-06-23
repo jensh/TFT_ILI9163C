@@ -297,6 +297,8 @@ class TFT_ILI9163C : public Adafruit_GFX {
 	void		writecommand(uint8_t c);
 	void		writedata(uint8_t d);
 	void		writedata16(uint16_t d);
+#define HAS_WRITEDATA16_BULK 1
+	void		writedata16_bulk(uint16_t d, uint16_t count);
 	#endif
 	void 		chipInit();
 	bool 		boundaryCheck(int16_t x,int16_t y);

@@ -75,6 +75,23 @@ void TFT_ILI9163C::writedata16(uint16_t d){
 	#endif
 } 
 
+void TFT_ILI9163C::writedata16_bulk(uint16_t d, uint16_t count){
+	uint8_t d_hi = d >> 8;
+	#ifdef SPI_HAS_TRANSACTION
+	SPI.beginTransaction(SPISettings(SPICLOCK, MSBFIRST, SPI_MODE0));
+	#endif
+	*rsport |=  rspinmask;
+	*csport &= ~cspinmask;
+	while (count--) {
+		spiwrite(d_hi);
+		spiwrite(d);
+	}
+	*csport |= cspinmask;
+	#ifdef SPI_HAS_TRANSACTION
+	SPI.endTransaction();
+	#endif
+} 
+
 void TFT_ILI9163C::setBitrate(uint32_t n){
 	#if !defined (SPI_HAS_TRANSACTION)
 	if (n >= 8000000) {
@@ -546,9 +563,13 @@ void TFT_ILI9163C::clearScreen(uint16_t color) {
 	#else
 		//writecommand(CMD_RAMWR);
 		setAddr(0x00,0x00,_GRAMWIDTH,_GRAMHEIGH);//go home
+		#ifndef HAS_WRITEDATA16_BULK
 		for (px = 0;px < _GRAMSIZE; px++){
 			writedata16(color);
 		}
+		#else
+		writedata16_bulk(color, _GRAMSIZE);
+		#endif
 	#endif
 }
 
