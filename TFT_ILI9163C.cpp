@@ -38,7 +38,7 @@ inline void TFT_ILI9163C::spiwrite(uint8_t c){
     SPDR = c;
     while(!(SPSR & _BV(SPIF)));
 #else
-    int cnt;
+    uint8_t cnt;
     uint8_t port_clk_lo_data_lo;
     uint8_t port_clk_lo_data_hi;
     uint8_t port_clk_hi_data_lo;
@@ -49,7 +49,7 @@ inline void TFT_ILI9163C::spiwrite(uint8_t c){
     port_clk_lo_data_hi = port_clk_lo_data_lo | datapinmask;
     port_clk_hi_data_hi = port_clk_lo_data_hi | clkpinmask;
     
-    for (cnt = 8; cnt; cnt--) {
+    for (cnt = 0; cnt < 8; cnt++) {
 	    // digitalWrite(PIN_CLK, LOW);
 	    
 	    // digitalWrite(PIN_DATA, c & 128 ? HIGH : LOW);
